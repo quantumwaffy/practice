@@ -68,8 +68,7 @@ class RoomData:
         return json_data
 
     def get_result_xml(self) -> str:
-        xml_data: str = dict2xml(self.compare_input_data(), wrap="room")
-        xml_data = "<rooms>\n" + xml_data + "\n</rooms>"
+        xml_data: str = "<rooms>\n" + dict2xml(self.compare_input_data(), wrap="room") + "\n</rooms>"
         self.write_output_file(xml_data)
         return xml_data
 
