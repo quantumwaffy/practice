@@ -6,7 +6,8 @@ from dict2xml import dict2xml
 
 class RoomData:
     """The class takes the paths to the json files with the list of students and rooms and the output format type.
-    Supported output file types: "json", "xml"."""
+    Supported output file types: "json", "xml".Calling an instance of the class returns a string with the final data in
+    the selected format, and generates an output file in the working directory."""
 
     __slots__ = ("path_to_rooms", "path_to_students", "output_format")
     __supported_output_formats: tuple = ("json", "xml")
