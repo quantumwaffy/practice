@@ -29,7 +29,7 @@ class RoomData:
             raise FileNotFoundError(f"'{path_to_students}' is not a file or does not exist.")
 
         if output_format in self.__supported_output_formats:
-            self.output_format = output_format
+            self.output_format: str = output_format
         else:
             raise TypeError(
                 f"Unknown output format '{output_format}'. Use {' or '.join(self.__supported_output_formats)}."
@@ -37,13 +37,13 @@ class RoomData:
 
     def get_data_dicts(self) -> tuple:
         with open(self.path_to_rooms) as json_rooms:
-            rooms = json.load(json_rooms)
+            rooms: list = json.load(json_rooms)
         with open(self.path_to_students) as json_students:
-            students = json.load(json_students)
+            students: list = json.load(json_students)
         return rooms, students
 
     def compare_input_data(self) -> list:
-        is_xml_output = self.output_format == "xml"
+        is_xml_output: bool = self.output_format == "xml"
         rooms, students = self.get_data_dicts()
         list(map(lambda room: room.update({"students": {}}), rooms)) if is_xml_output else None
         list(
@@ -80,9 +80,9 @@ class RoomData:
 
 def main():
     print(RoomData.__doc__)
-    path_to_rooms = input("Please, enter the path to json file with rooms data: ")
-    path_to_students = input("Please, enter the path to json file with students data: ")
-    output_format = input("Please, enter the output format: ")
+    path_to_rooms: str = input("Please, enter the path to json file with rooms data: ")
+    path_to_students: str = input("Please, enter the path to json file with students data: ")
+    output_format: str = input("Please, enter the output format: ")
     RoomData(path_to_rooms, path_to_students, output_format)()
     print("Well done!")
 
