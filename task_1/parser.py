@@ -14,9 +14,9 @@ class RoomData:
 
     def __call__(self, *args, **kwargs) -> str:
         if self.output_format == "xml":
-            return self.get_result_xml()
+            return self._get_result_xml()
         elif self.output_format == "json":
-            return self.get_result_json()
+            return self._get_result_json()
 
     def __init__(self, path_to_rooms: str, path_to_students: str, output_format: str) -> None:
         if os.path.isfile(path_to_rooms):
@@ -36,16 +36,16 @@ class RoomData:
                 f"Unknown output format '{output_format}'. Use {' or '.join(self.__supported_output_formats)}."
             )
 
-    def get_data_dicts(self) -> tuple:
+    def __get_data_dicts(self) -> tuple:
         with open(self.path_to_rooms) as json_rooms:
             rooms: list = json.load(json_rooms)
         with open(self.path_to_students) as json_students:
             students: list = json.load(json_students)
         return rooms, students
 
-    def compare_input_data(self) -> list:
+    def __compare_input_data(self) -> list:
         is_xml_output: bool = self.output_format == "xml"
-        rooms, students = self.get_data_dicts()
+        rooms, students = self.__get_data_dicts()
         list(map(lambda room: room.update({"students": {}}), rooms)) if is_xml_output else None
         list(
             map(
@@ -63,17 +63,17 @@ class RoomData:
         )
         return rooms
 
-    def get_result_json(self) -> str:
-        json_data: str = json.dumps(self.compare_input_data())
-        self.write_output_file(json_data)
+    def _get_result_json(self) -> str:
+        json_data: str = json.dumps(self.__compare_input_data())
+        self.__write_output_file(json_data)
         return json_data
 
-    def get_result_xml(self) -> str:
-        xml_data: str = "<rooms>\n" + dict2xml(self.compare_input_data(), wrap="room") + "\n</rooms>"
-        self.write_output_file(xml_data)
+    def _get_result_xml(self) -> str:
+        xml_data: str = "<rooms>\n" + dict2xml(self.__compare_input_data(), wrap="room") + "\n</rooms>"
+        self.__write_output_file(xml_data)
         return xml_data
 
-    def write_output_file(self, data: str) -> None:
+    def __write_output_file(self, data: str) -> None:
         with open(f"output_data.{self.output_format}", "w") as output:
             output.write(data)
 
