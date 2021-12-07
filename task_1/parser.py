@@ -32,7 +32,7 @@ class RoomData:
         if output_format in self.__supported_output_formats:
             self.output_format: str = output_format
         else:
-            raise TypeError(
+            raise ValueError(
                 f"Unknown output format '{output_format}'. Use {' or '.join(self.__supported_output_formats)}."
             )
 
