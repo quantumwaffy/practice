@@ -5,7 +5,6 @@ from task_1 import parser
 
 def main() -> None:
     supported_output_formats = ("json", "xml")
-    _json, _xml = supported_output_formats
     arg_parser = argparse.ArgumentParser(description="Process room data")
     arg_parser.add_argument(
         "-pr", dest="path_to_rooms", type=str, default="rooms.json", help="Path to .json file with rooms data"
@@ -22,13 +21,7 @@ def main() -> None:
         help="Format type of output file",
     )
     args = arg_parser.parse_args()
-
-    init_params = {
-        "path_to_rooms": args.path_to_rooms,
-        "path_to_students": args.path_to_students,
-        "output_format": args.output_format,
-    }
-    parser.JSONProcessFile(**init_params)() if args.output_format == _json else parser.XMLProcessFile(**init_params)()
+    parser.RoomStudentFileHandler(args.path_to_rooms, args.path_to_students, args.output_format)()
     print("Well done!")
 
 

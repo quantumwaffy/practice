@@ -2,6 +2,7 @@ import copy
 import json
 import os
 from abc import ABC, abstractmethod
+from typing import Type
 
 from dict2xml import dict2xml
 
@@ -40,6 +41,9 @@ class RoomStudentOutputFormat:
 
 
 class InputDataConverter(ABC):
+    def __init__(self, path) -> None:
+        self._path = path
+
     @abstractmethod
     def get_data(self) -> list[dict]:
         pass
@@ -85,9 +89,6 @@ class RoomStudentOutputFile(OutputFile):
 
 class JSONInputDataConverter(InputDataConverter):
     _path = JSONInputFilePath()
-
-    def __init__(self, path) -> None:
-        self._path = path
 
     def get_data(self) -> list[dict]:
         with open(self._path) as json_data:
@@ -158,45 +159,69 @@ class XMLRoomStudentSerializer(Serializer):
         return xml_data
 
 
-class RoomStudentProcessFile(ABC):
-    _compared_data = None
-    _serialized_data = None
+class RoomStudentFileFactory:
+    _input_conversion_handlers: dict = {
+        "json": JSONInputDataConverter,
+    }
+    _comparison_handlers: dict = {
+        "json": JSONRoomStudentComparerData,
+        "xml": XMLRoomStudentComparerData,
+    }
+    _serializers: dict = {"json": JSONRoomStudentSerializer, "xml": XMLRoomStudentSerializer}
+    _output_handlers: dict = {"default": RoomStudentOutputFile}
+
+    def __init__(self, output_format: str, input_format: str = "json") -> None:
+        self._output_format: str = output_format
+        self._input_format: str = input_format
+
+    @property
+    def input_handler(self) -> Type[InputDataConverter]:
+        return self._input_conversion_handlers.get(self._input_format)
+
+    @property
+    def comparison_handler(self) -> Type[RoomStudentComparerData]:
+        return self._comparison_handlers.get(self._output_format)
+
+    @property
+    def serializer(self) -> Type[Serializer]:
+        return self._serializers.get(self._output_format)
+
+    @property
+    def output_handler(self) -> Type[RoomStudentOutputFile]:
+        return self._output_handlers.get("default")
+
+
+class RoomStudentFileHandler:
+    _file_factory: Type[RoomStudentFileFactory] = RoomStudentFileFactory
+
+    def __init__(self, path_to_rooms: str, path_to_students: str, output_format: str) -> None:
+        instance_file_factory: RoomStudentFileFactory = self._file_factory(output_format)
+        self._input_handler: Type[InputDataConverter] = instance_file_factory.input_handler
+        self._comparison_handler: Type[RoomStudentComparerData] = instance_file_factory.comparison_handler
+        self._serializer: Type[Serializer] = instance_file_factory.serializer
+        self._output_handler: Type[RoomStudentOutputFile] = instance_file_factory.output_handler
+        self._path_to_rooms = path_to_rooms
+        self._path_to_students = path_to_students
+        self._output_format = output_format
 
     def __call__(self, *args, **kwargs):
         return self.write_output_file()
 
-    def __init__(self, path_to_rooms: str, path_to_students: str, output_format: str) -> None:
-        self._rooms_data: list[dict] = JSONInputDataConverter(path_to_rooms).get_data()
-        self._students_data: list[dict] = JSONInputDataConverter(path_to_students).get_data()
-        self._output_format = output_format
+    @property
+    def _rooms_data(self) -> list[dict]:
+        return self._input_handler(self._path_to_rooms).get_data()
 
-    @abstractmethod
-    def _compare_data(self) -> list[dict]:
-        pass
+    @property
+    def _students_data(self) -> list[dict]:
+        return self._input_handler(self._path_to_students).get_data()
 
-    @abstractmethod
-    def _serialize_data(self) -> str:
-        pass
+    @property
+    def _compared_data(self) -> list[dict]:
+        return self._comparison_handler(self._rooms_data, self._students_data).compare()
+
+    @property
+    def _serialized_data(self) -> str:
+        return self._serializer(self._compared_data).serialize()
 
     def write_output_file(self) -> None:
-        return RoomStudentOutputFile(self._serialize_data(), self._output_format).write_file()
-
-
-class JSONProcessFile(RoomStudentProcessFile):
-    def _compare_data(self) -> list[dict]:
-        self._compared_data: list[dict] = JSONRoomStudentComparerData(self._rooms_data, self._students_data).compare()
-        return self._compared_data
-
-    def _serialize_data(self) -> str:
-        self._serialized_data: str = JSONRoomStudentSerializer(self._compare_data()).serialize()
-        return self._serialized_data
-
-
-class XMLProcessFile(RoomStudentProcessFile):
-    def _compare_data(self) -> list[dict]:
-        self._compared_data: list[dict] = XMLRoomStudentComparerData(self._rooms_data, self._students_data).compare()
-        return self._compared_data
-
-    def _serialize_data(self) -> str:
-        self._serialized_data: str = XMLRoomStudentSerializer(self._compare_data()).serialize()
-        return self._serialized_data
+        return self._output_handler(self._serialized_data, self._output_format).write_file()
