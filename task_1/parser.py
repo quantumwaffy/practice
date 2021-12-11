@@ -160,6 +160,8 @@ class XMLRoomStudentSerializer(Serializer):
 
 
 class RoomStudentFileFactory:
+    _output_format = RoomStudentOutputFormat()
+
     _input_conversion_handlers: dict = {
         "json": JSONInputDataConverter,
     }
