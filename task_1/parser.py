@@ -194,11 +194,11 @@ class RoomStudentFileHandler:
         self._comparison_handler: Type[RoomStudentComparerData] = instance_file_factory.comparison_handler
         self._serializer: Type[Serializer] = instance_file_factory.serializer
         self._output_handler: Type[RoomStudentOutputFile] = instance_file_factory.output_handler
-        self._path_to_rooms = path_to_rooms
-        self._path_to_students = path_to_students
-        self._output_format = output_format
+        self._path_to_rooms: str = path_to_rooms
+        self._path_to_students: str = path_to_students
+        self._output_format: str = output_format
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> None:
         return self.write_output_file()
 
     @property
