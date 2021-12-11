@@ -2,6 +2,7 @@ import copy
 import json
 import os
 from abc import ABC, abstractmethod
+from itertools import groupby
 from typing import Type
 
 from dict2xml import dict2xml
@@ -97,11 +98,22 @@ class JSONInputDataConverter(InputDataConverter):
 
 
 class RoomStudentComparerData(ComparerData):
+    _prepared_students_data_cache: dict = None
+
     def __init__(self, rooms_data: list[dict], students_data: list[dict]) -> None:
         super().__init__()
         self._rooms_data: list[dict] = rooms_data
-        self._students_data: list[dict] = students_data
+        self._students_data: list[dict] = sorted(students_data, key=lambda student: student.get("room"))
         self._preset_compared_data = copy.deepcopy(rooms_data)
+
+    @property
+    def _prepared_students_data(self) -> dict:
+        if not self._prepared_students_data_cache:
+            self._prepared_students_data_cache: dict = {
+                room: list(students)
+                for room, students in groupby(self._students_data, key=lambda student: student.get("room"))
+            }
+        return self._prepared_students_data_cache
 
     @abstractmethod
     def compare(self) -> list[dict]:
@@ -110,40 +122,20 @@ class RoomStudentComparerData(ComparerData):
 
 class JSONRoomStudentComparerData(RoomStudentComparerData):
     def compare(self) -> list[dict]:
-        list(
-            map(
-                lambda room: room.update(
-                    {
-                        "students": [
-                            {"id": student.get("id"), "name": student.get("name")}
-                            for student in self._students_data
-                            if student.get("room") == room.get("id")
-                        ]
-                    }
-                ),
-                self._preset_compared_data,
-            )
-        )
+        [
+            room.update({"students": self._prepared_students_data.get(room.get("id"))})
+            for room in self._preset_compared_data
+        ]
         return self._preset_compared_data
 
 
 class XMLRoomStudentComparerData(RoomStudentComparerData):
     def compare(self) -> list[dict]:
         list(map(lambda room: room.update({"students": {}}), self._preset_compared_data))
-        list(
-            map(
-                lambda room: room.get("students").update(
-                    {
-                        "student": [
-                            {"id": student.get("id"), "name": student.get("name")}
-                            for student in self._students_data
-                            if student.get("room") == room.get("id")
-                        ]
-                    }
-                ),
-                self._preset_compared_data,
-            )
-        )
+        [
+            room.get("students").update({"student": self._prepared_students_data.get(room.get("id"))})
+            for room in self._preset_compared_data
+        ]
         return self._preset_compared_data
 
 
